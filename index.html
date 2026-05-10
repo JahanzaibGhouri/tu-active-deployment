@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TU-ACTIVE DEPLOYMENT — Live Command Center</title>
+<meta name="description" content="TU-ACTIVE DEPLOYMENT — real-time deployment intelligence dashboard" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════════════════════
+   TU-ACTIVE DEPLOYMENT — Stylesheet
+   Premium SaaS-style UI · Glassmorphism · Dark + Light themes
+   ═══════════════════════════════════════════════════════════ */
+
+:root[data-theme="dark"] {
+  --bg: #060912;
+  --bg-2: #0b1020;
+  --surface: rgba(20, 28, 48, 0.55);
+  --surface-2: rgba(28, 38, 62, 0.45);
+  --border: rgba(120, 140, 200, 0.16);
+  --border-2: rgba(120, 140, 200, 0.28);
+  --text: #e8edf7;
+  --text-dim: #8a96b3;
+  --text-mute: #5c6885;
+  --accent: #00c0ff;
+  --accent-2: #9b8afb;
+  --good: #2ed98a;
+  --warn: #f4b740;
+  --bad: #ff5474;
+  --info: #6aa9ff;
+  --grid: rgba(120, 140, 200, 0.12);
+  --shadow: 0 14px 50px rgba(0, 0, 0, 0.45);
+  --glow: 0 0 0 1px rgba(0, 192, 255, 0.18), 0 12px 40px rgba(0, 192, 255, 0.06);
+  --bg-grad: radial-gradient(1200px 700px at 12% -10%, rgba(0, 192, 255, 0.12), transparent 60%),
+             radial-gradient(900px 600px at 100% 0%, rgba(155, 138, 251, 0.10), transparent 55%),
+             radial-gradient(800px 500px at 50% 110%, rgba(46, 217, 138, 0.06), transparent 60%),
+             linear-gradient(180deg, #060912 0%, #0a0f1d 100%);
+}
+:root[data-theme="light"] {
+  --bg: #f4f6fb;
+  --bg-2: #eaeef6;
+  --surface: rgba(255, 255, 255, 0.78);
+  --surface-2: rgba(255, 255, 255, 0.62);
+  --border: rgba(40, 60, 110, 0.10);
+  --border-2: rgba(40, 60, 110, 0.18);
+  --text: #0d1530;
+  --text-dim: #4d5a7a;
+  --text-mute: #7d8aa8;
+  --accent: #0070f3;
+  --accent-2: #7b5cff;
+  --good: #16a060;
+  --warn: #d18a17;
+  --bad: #e23a5a;
+  --info: #0070f3;
+  --grid: rgba(40, 60, 110, 0.10);
+  --shadow: 0 10px 30px rgba(20, 40, 80, 0.10);
+  --glow: 0 0 0 1px rgba(0, 112, 243, 0.18), 0 8px 24px rgba(0, 112, 243, 0.08);
+  --bg-grad: radial-gradient(1200px 700px at 0% -10%, rgba(0, 112, 243, 0.10), transparent 60%),
+             radial-gradient(900px 600px at 100% 0%, rgba(123, 92, 255, 0.08), transparent 55%),
+             linear-gradient(180deg, #f4f6fb 0%, #eef2f9 100%);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: 'Sora', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  background-image: var(--bg-grad);
+  background-attachment: fixed;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  font-size: 14px;
+  letter-spacing: -0.005em;
+}
+::selection { background: rgba(0, 192, 255, 0.32); color: #fff; }
+
+/* ─── Login Gate ─────────────────────────────────────────── */
+.gate {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+  background-image: var(--bg-grad);
+}
+.gate-card {
+  width: min(420px, 92vw);
+  padding: 38px 32px 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+.gate-logo {
+  display: inline-flex; align-items: center; gap: 10px;
+  margin-bottom: 24px;
+}
+.gate-logo .dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 16px var(--accent);
+}
+.gate-title {
+  font-weight: 800; font-size: 18px; letter-spacing: 0.04em;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.gate h1 {
+  margin: 0 0 8px; font-size: 22px; font-weight: 700;
+}
+.gate p { margin: 0 0 22px; color: var(--text-dim); font-size: 13px; }
+.gate input {
+  width: 100%; padding: 13px 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-radius: 12px;
+  color: var(--text); font-family: inherit; font-size: 14px;
+  outline: none; transition: all 0.2s;
+}
+.gate input:focus { border-color: var(--accent); box-shadow: var(--glow); }
+.gate button {
+  width: 100%; margin-top: 14px; padding: 13px 16px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff; border: none; border-radius: 12px;
+  font-family: inherit; font-weight: 600; font-size: 14px;
+  cursor: pointer; transition: transform 0.15s, box-shadow 0.2s;
+  letter-spacing: 0.02em;
+}
+.gate button:hover { transform: translateY(-1px); box-shadow: 0 10px 30px rgba(0, 192, 255, 0.35); }
+.gate-error { color: var(--bad); font-size: 12px; margin-top: 10px; min-height: 16px; }
+.gate-foot { margin-top: 20px; color: var(--text-mute); font-size: 11px; }
+
+/* ─── Layout ─────────────────────────────────────────────── */
+.app { display: none; max-width: 1480px; margin: 0 auto; padding: 22px 26px 60px; }
+.app.ready { display: block; }
+
+.topbar {
+  position: sticky; top: 12px; z-index: 50;
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: var(--shadow);
+  margin-bottom: 22px;
+}
+.brand {
+  display: flex; align-items: center; gap: 12px;
+  font-weight: 800; font-size: 15px; letter-spacing: 0.06em;
+}
+.brand .dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 14px var(--accent);
+  animation: pulse 2s ease-in-out infinite;
+}
+.brand span {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.9); }
+}
+.spacer { flex: 1; }
+.status-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 11px; color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+}
+.status-pill .live-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--good);
+  box-shadow: 0 0 8px var(--good);
+}
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-dim);
+  cursor: pointer; transition: all 0.15s;
+}
+.icon-btn:hover { color: var(--text); border-color: var(--border-2); transform: translateY(-1px); }
+.icon-btn svg { width: 16px; height: 16px; }
+
+/* ─── Section Headers ────────────────────────────────────── */
+.section { margin: 32px 0 0; animation: fadeUp 0.6s ease both; }
+.section + .section { margin-top: 28px; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.section-head {
+  display: flex; align-items: center; gap: 10px;
+  margin: 0 4px 14px;
+}
+.section-head h2 {
+  margin: 0; font-size: 12px; font-weight: 700;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--text-dim);
+}
+.section-head .accent-bar {
+  width: 4px; height: 16px; border-radius: 2px;
+  background: linear-gradient(180deg, var(--accent), var(--accent-2));
+}
+.section-head .count {
+  margin-left: auto; font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--text-mute);
+}
+
+/* ─── KPI Grid ───────────────────────────────────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+}
+.kpi {
+  position: relative;
+  padding: 18px 18px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+.kpi:hover { transform: translateY(-3px); border-color: var(--border-2); box-shadow: var(--glow); }
+.kpi::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--kpi-c, var(--accent)), transparent);
+  opacity: 0.7;
+}
+.kpi-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.kpi-label {
+  font-size: 11px; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;
+}
+.kpi-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 10px;
+  background: color-mix(in srgb, var(--kpi-c, var(--accent)) 14%, transparent);
+  color: var(--kpi-c, var(--accent));
+}
+.kpi-icon svg { width: 16px; height: 16px; }
+.kpi-value {
+  font-size: 30px; font-weight: 800; letter-spacing: -0.02em;
+  margin: 8px 0 4px;
+  font-variant-numeric: tabular-nums;
+}
+.kpi-sub {
+  font-size: 11px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace;
+}
+.kpi-sub b { color: var(--good); font-weight: 600; }
+.kpi-sub.warn b { color: var(--warn); }
+.kpi-sub.bad b { color: var(--bad); }
+.kpi-spark { height: 28px; margin-top: 6px; }
+
+/* ─── Cards ──────────────────────────────────────────────── */
+.card {
+  padding: 22px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow);
+}
+.card h3 {
+  margin: 0 0 4px; font-size: 16px; font-weight: 700;
+}
+.card .subtitle { color: var(--text-dim); font-size: 12px; margin-bottom: 16px; }
+
+.grid-2 { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 18px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+@media (max-width: 1024px) {
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+}
+
+/* ─── Charts ─────────────────────────────────────────────── */
+.chart-wrap { position: relative; height: 280px; }
+.chart-wrap.lg { height: 340px; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
+.legend-item {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 10px; background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: 10px;
+  font-size: 12px; color: var(--text-dim);
+}
+.legend-item .swatch {
+  width: 10px; height: 10px; border-radius: 3px;
+}
+.legend-item b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* ─── Table ──────────────────────────────────────────────── */
+.tbl-toolbar {
+  display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; align-items: center;
+}
+.tbl-toolbar input, .tbl-toolbar select {
+  padding: 9px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text); font-family: inherit; font-size: 13px;
+  outline: none; transition: all 0.15s;
+  min-width: 130px;
+}
+.tbl-toolbar input:focus, .tbl-toolbar select:focus {
+  border-color: var(--accent); box-shadow: var(--glow);
+}
+.tbl-toolbar input { flex: 1; min-width: 220px; }
+.tbl-wrap { overflow-x: auto; border-radius: 14px; border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th {
+  position: sticky; top: 0;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border-2);
+  padding: 12px 14px;
+  font-weight: 600; font-size: 11px;
+  color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em;
+  text-align: left; cursor: pointer; user-select: none;
+  white-space: nowrap;
+}
+thead th:hover { color: var(--text); }
+thead th .sort-ind { opacity: 0.4; margin-left: 4px; font-size: 9px; }
+thead th.active .sort-ind { opacity: 1; color: var(--accent); }
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+tbody tr:hover { background: var(--surface-2); }
+tbody td { padding: 12px 14px; vertical-align: middle; }
+tbody td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: 'JetBrains Mono', monospace; }
+tbody td.brand-cell { font-weight: 600; color: var(--text); }
+.pagination {
+  display: flex; align-items: center; gap: 8px; justify-content: flex-end;
+  margin-top: 14px; font-size: 12px; color: var(--text-dim);
+}
+.pagination button {
+  padding: 6px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-dim);
+  font-family: inherit; cursor: pointer; transition: all 0.15s;
+}
+.pagination button:hover:not(:disabled) { color: var(--text); border-color: var(--border-2); }
+.pagination button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ─── Badges & progress ─────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.badge::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor; box-shadow: 0 0 6px currentColor;
+}
+.badge.live { color: var(--good); background: color-mix(in srgb, var(--good) 14%, transparent); }
+.badge.pending { color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); }
+.badge.under { color: var(--info); background: color-mix(in srgb, var(--info) 14%, transparent); }
+.badge.demo { color: var(--accent-2); background: color-mix(in srgb, var(--accent-2) 14%, transparent); }
+.badge.client { color: var(--text-dim); background: var(--surface-2); }
+.badge.delayed { color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent); }
+.badge.empty { color: var(--text-mute); background: var(--surface-2); }
+.badge.empty::before { box-shadow: none; opacity: 0.4; }
+
+.progress {
+  display: inline-flex; align-items: center; gap: 8px; min-width: 110px;
+}
+.bar {
+  flex: 1; height: 6px; background: var(--surface-2);
+  border-radius: 999px; overflow: hidden; position: relative;
+}
+.bar-fill {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  border-radius: 999px;
+  transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.bar-fill.good { background: linear-gradient(90deg, var(--good), #6ce8b1); }
+.bar-fill.warn { background: linear-gradient(90deg, var(--warn), #ffd075); }
+.bar-fill.bad  { background: linear-gradient(90deg, var(--bad), #ff8aa1); }
+.progress span { font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--text-dim); min-width: 32px; text-align: right; }
+
+/* ─── Heatmap (Department Matrix) ────────────────────────── */
+.heatmap { display: grid; gap: 6px; }
+.heatmap .hm-row { display: grid; grid-template-columns: 200px repeat(6, 1fr); gap: 6px; align-items: center; }
+.heatmap .hm-row.hd { font-size: 10px; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.08em; padding: 0 6px; }
+.heatmap .hm-cell {
+  padding: 12px 8px; border-radius: 10px; text-align: center;
+  font-size: 12px; font-weight: 600; transition: transform 0.15s;
+  border: 1px solid var(--border);
+}
+.heatmap .hm-cell:hover { transform: scale(1.04); }
+.heatmap .hm-label {
+  padding: 12px 14px; font-size: 12px; color: var(--text-dim); font-weight: 500;
+  text-align: right;
+}
+.hm-l-100 { background: color-mix(in srgb, var(--good) 20%, transparent); color: var(--good); }
+.hm-l-80  { background: color-mix(in srgb, var(--good) 14%, transparent); color: var(--good); }
+.hm-l-60  { background: color-mix(in srgb, var(--info) 14%, transparent); color: var(--info); }
+.hm-l-40  { background: color-mix(in srgb, var(--warn) 14%, transparent); color: var(--warn); }
+.hm-l-20  { background: color-mix(in srgb, var(--bad) 14%, transparent); color: var(--bad); }
+.hm-l-0   { background: var(--surface-2); color: var(--text-mute); }
+
+/* ─── Leaderboard ────────────────────────────────────────── */
+.leader { display: flex; flex-direction: column; gap: 10px; }
+.leader-row {
+  display: grid; grid-template-columns: 28px 1fr 90px 70px;
+  gap: 12px; align-items: center;
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: 12px;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.leader-row:hover { transform: translateX(3px); border-color: var(--border-2); }
+.leader-rank {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 8px;
+  font-weight: 700; font-size: 12px;
+  background: var(--surface);
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+}
+.leader-rank.gold   { background: linear-gradient(135deg, #f4cf52, #b88c1d); color: #1c1100; }
+.leader-rank.silver { background: linear-gradient(135deg, #d8dde6, #9aa5bb); color: #18202c; }
+.leader-rank.bronze { background: linear-gradient(135deg, #d49764, #8b5e2e); color: #2c1700; }
+.leader-name { font-weight: 600; font-size: 13px; }
+.leader-meta { font-size: 11px; color: var(--text-mute); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+.leader-score { font-family: 'JetBrains Mono', monospace; font-size: 13px; text-align: right; font-weight: 600; }
+
+/* ─── CEO Insights ───────────────────────────────────────── */
+.insights { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.insight {
+  padding: 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  display: flex; gap: 14px; align-items: flex-start;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.insight:hover { transform: translateY(-2px); border-color: var(--border-2); }
+.insight-ico {
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 10px;
+  background: color-mix(in srgb, var(--ins-c, var(--accent)) 14%, transparent);
+  color: var(--ins-c, var(--accent));
+}
+.insight-ico svg { width: 18px; height: 18px; }
+.insight-body h4 { margin: 0 0 4px; font-size: 13px; font-weight: 600; }
+.insight-body p { margin: 0; font-size: 12px; color: var(--text-dim); line-height: 1.55; }
+
+/* ─── Risk Alerts ────────────────────────────────────────── */
+.alerts { display: flex; flex-direction: column; gap: 10px; max-height: 540px; overflow-y: auto; padding-right: 4px; }
+.alerts::-webkit-scrollbar { width: 6px; }
+.alerts::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+.alert {
+  display: grid; grid-template-columns: 32px 1fr auto;
+  gap: 14px; align-items: center;
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--alert-c, var(--warn));
+  border-radius: 12px;
+  transition: transform 0.15s;
+}
+.alert:hover { transform: translateX(3px); }
+.alert-ico {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 9px;
+  background: color-mix(in srgb, var(--alert-c, var(--warn)) 16%, transparent);
+  color: var(--alert-c, var(--warn));
+}
+.alert-ico svg { width: 16px; height: 16px; }
+.alert-body { min-width: 0; }
+.alert-body h5 { margin: 0 0 2px; font-size: 13px; font-weight: 600; }
+.alert-body p { margin: 0; font-size: 11px; color: var(--text-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.alert-tag { font-size: 10px; padding: 4px 8px; border-radius: 6px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em; font-family: 'JetBrains Mono', monospace;
+  background: color-mix(in srgb, var(--alert-c, var(--warn)) 16%, transparent);
+  color: var(--alert-c, var(--warn));
+}
+
+/* ─── Timeline ───────────────────────────────────────────── */
+.tl-list { display: flex; flex-direction: column; gap: 10px; max-height: 520px; overflow-y: auto; padding-right: 4px; }
+.tl-list::-webkit-scrollbar { width: 6px; }
+.tl-list::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+.tl-row {
+  display: grid; grid-template-columns: 90px 1fr 110px;
+  gap: 14px; align-items: center;
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: transform 0.15s;
+}
+.tl-row:hover { transform: translateX(3px); }
+.tl-date {
+  font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  text-align: center; padding: 6px 8px; border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.tl-date b { display: block; font-size: 16px; font-weight: 700; color: var(--text); }
+.tl-date small { font-size: 10px; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.06em; }
+.tl-name { font-weight: 600; font-size: 13px; }
+.tl-meta { font-size: 11px; color: var(--text-mute); margin-top: 2px; }
+.tl-row.past .tl-date { opacity: 0.65; }
+
+/* ─── Footer ─────────────────────────────────────────────── */
+.foot {
+  margin-top: 36px; padding: 18px 0;
+  text-align: center; color: var(--text-mute);
+  font-size: 11px; font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.04em;
+}
+
+/* ─── Loader ─────────────────────────────────────────────── */
+.loader-overlay {
+  position: fixed; inset: 0; z-index: 8000;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+  background-image: var(--bg-grad);
+  flex-direction: column; gap: 18px;
+}
+.spinner {
+  width: 44px; height: 44px;
+  border: 3px solid var(--border-2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+#load-msg { color: var(--text-dim); font-size: 13px; font-family: 'JetBrains Mono', monospace; }
+
+/* ─── Responsive ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .app { padding: 14px 14px 40px; }
+  .topbar { flex-wrap: wrap; padding: 12px 14px; }
+  .kpi-value { font-size: 24px; }
+  .heatmap .hm-row { grid-template-columns: 1fr; gap: 4px; }
+  .heatmap .hm-row.hd { display: none; }
+  .heatmap .hm-label { text-align: left; padding: 4px 6px; font-weight: 600; color: var(--text); }
+  .heatmap .hm-row { padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .leader-row { grid-template-columns: 28px 1fr 70px; }
+  .leader-row .leader-meta-cell { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  LOGIN GATE                                             -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="gate" class="gate">
+  <form class="gate-card" id="gate-form" autocomplete="off">
+    <div class="gate-logo">
+      <span class="dot"></span>
+      <span class="gate-title">TU-ACTIVE DEPLOYMENT</span>
+    </div>
+    <h1>Welcome back</h1>
+    <p>Enter access password to view the live command center</p>
+    <input type="password" id="gate-pw" placeholder="Access password" autofocus />
+    <button type="submit">Sign in →</button>
+    <div class="gate-error" id="gate-err"></div>
+    <div class="gate-foot">Authorized personnel only · Secure session</div>
+  </form>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  LOADER                                                 -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="loader" class="loader-overlay" style="display:none">
+  <div class="spinner"></div>
+  <div id="load-msg">Loading live data from Google Sheets…</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  MAIN APP                                               -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="app" id="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="brand">
+      <span class="dot"></span>
+      <span>TU-ACTIVE DEPLOYMENT</span>
+    </div>
+    <div class="status-pill"><span class="live-dot"></span><span id="last-sync">syncing…</span></div>
+    <div class="spacer"></div>
+    <button class="icon-btn" id="btn-refresh" title="Refresh now">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>
+    </button>
+    <button class="icon-btn" id="btn-export-csv" title="Export CSV">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    </button>
+    <button class="icon-btn" id="btn-export-png" title="Export PNG">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    </button>
+    <button class="icon-btn" id="btn-theme" title="Toggle theme">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+    <button class="icon-btn" id="btn-logout" title="Sign out">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    </button>
+  </div>
+
+  <!-- 1. EXECUTIVE KPIs -->
+  <section class="section">
+    <div class="section-head">
+      <div class="accent-bar"></div>
+      <h2>Executive Overview</h2>
+      <span class="count" id="kpi-count">— brands</span>
+    </div>
+    <div class="kpi-grid" id="kpi-grid"></div>
+  </section>
+
+  <!-- 2. LIVE DEPLOYMENT OVERVIEW -->
+  <section class="section">
+    <div class="section-head">
+      <div class="accent-bar"></div>
+      <h2>Deployment Overview</h2>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Status Distribution</h3>
+        <p class="subtitle">Live, pending, under deployment & other states</p>
+        <div class="chart-wrap"><canvas id="chart-status"></canvas></div>
+        <div class="chart-legend" id="legend-status"></div>
+      </div>
+      <div class="card">
+        <h3>Brands by Team</h3>
+        <p class="subtitle">Status breakdown per regional team</p>
+        <div class="chart-wrap"><canvas id="chart-team"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. BRAND DEPLOYMENT TABLE -->
+  <section class="section">
+    <div class="section-head">
+      <div class="accent-bar"></div>
+      <h2>Brand Deployment Tracker</h2>
+      <span class="count" id="tbl-count">—</span>
+    </div>
+    <div class="card">
+      <div class="tbl-toolbar">
+        <input id="tbl-search" type="text" placeholder="Search brand, assignee, task…" />
+        <select id="tbl-status"><option value="">All statuses</option></select>
+        <select id="tbl-team"><option value="">All teams</option></select>
+        <select id="tbl-assignee"><option value="">All assignees</option></select>
+        <select id="tbl-risk">
+          <option value="">All risk levels</option>
+          <option value="high">High risk</option>
+          <option value="med">Medium risk</option>
+          <option value="low">Low risk</option>
+        </select>
+      </div>
+      <div class="tbl-wrap">
+        <table id="tbl">
+          <thead><tr id="tbl-head"></tr></thead>
+          <tbody id="tbl-body"></tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <span id="tbl-info"></span>
+        <button id="tbl-prev">← Prev</button>
+        <button id="tbl-next">Next →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. DEPARTMENT COMPLETION MATRIX -->
+  <section class="section">
+    <div class="section-head">
+      <div class="accent-bar"></div>
+      <h2>Department Completion Matrix</h2>
+    </div>
+    <div class="card">
+      <h3>Completion % by Team × Department</h3>
+      <p class="subtitle">Heat map — green = mostly live, red = mostly pending</p>
+      <div class="heatmap" id="heatmap"></div>
+    </div>
+  </section>
+
+  <!-- 5. ASSIGNEE PERFORMANCE -->
+  <section class="section">
+    <div class="section-head">
+      <div class="accent-bar"></div>
+      <h2>Assignee Performance</h2>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Leaderboard</h3>
+        <p class="subtitle">Ranked by live brands handled</p>
+        <div class="leader" id="leader"></div>
+      </div>
+      <div class="card">
+        <h3>Workload Distribution</h3>
+        <p class="subtitle">Live vs pending vs under deployment per assignee</p>
+        <div class="chart-wrap lg"><canvas id="chart-assignee"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. CEO INSIGHTS -->
+  <section class="section">
+    <div class="section-head">
+      <div class="accent-bar"></div>
+      <h2>CEO Summary</h2>
+    </div>
+    <div class="card">
+      <h3>Auto-generated insights</h3>
+      <p class="subtitle">Refreshed live from your Google Sheet</p>
+      <div class="insights" id="insights"></div>
+    </div>
+  </section>
+
+  <!-- 7. RISK + 8. TIMELINE  -->
+  <section class="section">
+    <div class="section-head">
+      <div class="accent-bar"></div>
+      <h2>Risk & Timeline</h2>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Risk Monitor</h3>
+        <p class="subtitle">Brands needing immediate attention</p>
+        <div class="alerts" id="alerts"></div>
+      </div>
+      <div class="card">
+        <h3>Go-Live Timeline</h3>
+        <p class="subtitle">Upcoming launches sorted by date</p>
+        <div class="tl-list" id="timeline"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="foot">TU-ACTIVE DEPLOYMENT · Live command center · Auto-syncing from Google Sheets</div>
+</div>
+
+<script>
+/* ╔══════════════════════════════════════════════════════════╗
+   ║  TU-ACTIVE DEPLOYMENT — application logic                ║
+   ╚══════════════════════════════════════════════════════════╝ */
+
+/* ─── CONFIG ────────────────────────────────────────────── */
+const CONFIG = {
+  SHEET_CSV: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSKDEPyM3d7QKfFD1rp0vmmnpWet4lZbiiYrz1cysz-p7xN9xAdbZiHJz1noJv4oP4w9oPmCS9v3cSG/pub?gid=0&single=true&output=csv',
+  AUTO_REFRESH_MS: 60 * 1000,        // 60-second sync
+  PASSWORD: 'tuactive2026',          // change this
+  PAGE_SIZE: 15,
+};
+
+/* ─── EARLY STATE (referenced during init / auth bootstrap) ─ */
+let kickedBoot = false;
+let ROWS = [];
+const charts = {};
+let tblState = { search: '', status: '', team: '', assignee: '', risk: '', sortKey: 'brand', sortDir: 1, page: 1 };
+
+/* ─── AUTH GATE ─────────────────────────────────────────── */
+const SESS_KEY = 'tu_active_session';
+const gate = document.getElementById('gate');
+const gateForm = document.getElementById('gate-form');
+const gateErr = document.getElementById('gate-err');
+const gatePw = document.getElementById('gate-pw');
+
+function isAuthed() {
+  try {
+    const s = JSON.parse(sessionStorage.getItem(SESS_KEY) || 'null');
+    return s && s.ok && (Date.now() - s.t) < 1000 * 60 * 60 * 12;
+  } catch (e) { return false; }
+}
+function authIn() {
+  sessionStorage.setItem(SESS_KEY, JSON.stringify({ ok: true, t: Date.now() }));
+  gate.style.display = 'none';
+  document.getElementById('app').classList.add('ready');
+  document.getElementById('loader').style.display = 'flex';
+  bootstrap();
+}
+function authOut() {
+  sessionStorage.removeItem(SESS_KEY);
+  location.reload();
+}
+gateForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (gatePw.value === CONFIG.PASSWORD) { gateErr.textContent = ''; authIn(); }
+  else { gateErr.textContent = 'Incorrect password'; gatePw.value = ''; gatePw.focus(); }
+});
+if (isAuthed()) authIn();
+
+/* ─── THEME ─────────────────────────────────────────────── */
+const THEME_KEY = 'tu_theme';
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem(THEME_KEY, t);
+  if (window.Chart) Chart.defaults.color = getCss('--text-dim');
+  refreshAllCharts();
+}
+function getCss(varname) { return getComputedStyle(document.documentElement).getPropertyValue(varname).trim(); }
+applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+document.getElementById('btn-theme').addEventListener('click', () => {
+  applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+});
+document.getElementById('btn-logout').addEventListener('click', authOut);
+document.getElementById('btn-refresh').addEventListener('click', () => loadData(true));
+
+/* ─── HELPERS ───────────────────────────────────────────── */
+function col(row, ...names) {
+  for (const n of names) if (row[n] !== undefined) return row[n];
+  const keys = Object.keys(row);
+  for (const n of names) {
+    const c = n.trim().toLowerCase();
+    const k = keys.find(k => k.replace(/^﻿/, '').trim().toLowerCase() === c);
+    if (k) return row[k];
+  }
+  return '';
+}
+function s(v) { return (v == null ? '' : String(v)).trim(); }
+function lc(v) { return s(v).toLowerCase(); }
+
+/* Normalize free-text status to one of the canonical buckets */
+function normStatus(v) {
+  const t = lc(v);
+  if (!t) return '';
+  if (/^live$/.test(t) || t.startsWith('live')) return 'Live';
+  if (t.startsWith('under')) return 'Under Deployment';
+  if (t.startsWith('pending')) return 'Pending';
+  if (t.startsWith('demo')) return 'Demo';
+  if (t.includes('client side')) return 'Client Pending';
+  return 'Other';
+}
+function statusBadgeClass(st) {
+  return ({'Live':'live','Pending':'pending','Under Deployment':'under','Demo':'demo','Client Pending':'client'}[st]) || 'empty';
+}
+
+/* Robust date parser — handles 9/6/2024, 4-11-2025, "7April,2026", "24pril.2026" typo */
+const MONTHS = { jan:0, feb:1, mar:2, apr:3, april:3, may:4, jun:5, jul:6, aug:7, sep:8, sept:8, oct:9, nov:10, dec:11 };
+function parseGoLive(val) {
+  const t = s(val);
+  if (!t) return null;
+  let m;
+  if ((m = t.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})/))) {
+    const [_, a, b, c] = m;
+    const y = c.length === 2 ? 2000 + +c : +c;
+    const day = +a, mo = +b - 1;
+    if (day >= 1 && day <= 31 && mo >= 0 && mo <= 11) {
+      const d = new Date(y, mo, day); if (!isNaN(d)) return d;
+    }
+  }
+  if ((m = t.match(/^(\d{1,2})\s*([A-Za-z]+)[\s,.]*(\d{2,4})/))) {
+    const [_, a, mn, c] = m;
+    const key = mn.toLowerCase().replace(/[^a-z]/g, '');
+    let mo = MONTHS[key];
+    if (mo === undefined) {
+      for (const k of Object.keys(MONTHS)) if (key.startsWith(k.slice(0, 3))) { mo = MONTHS[k]; break; }
+    }
+    if (mo !== undefined) {
+      const y = c.length === 2 ? 2000 + +c : +c;
+      const d = new Date(y, mo, +a); if (!isNaN(d)) return d;
+    }
+  }
+  if ((m = t.match(/^(\d{4})-(\d{2})-(\d{2})/))) {
+    const d = new Date(t); if (!isNaN(d)) return d;
+  }
+  return null;
+}
+function fmtDate(d) {
+  if (!(d instanceof Date) || isNaN(d)) return '—';
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' });
+}
+function fmtRel(d) {
+  if (!(d instanceof Date) || isNaN(d)) return '';
+  const t = new Date(); t.setHours(0,0,0,0);
+  const diff = Math.round((d - t) / 86400000);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  if (diff === -1) return 'Yesterday';
+  if (diff > 0 && diff <= 7) return `In ${diff}d`;
+  if (diff < 0 && diff >= -30) return `${-diff}d ago`;
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+}
+function normTeam(v) {
+  const t = s(v).toUpperCase().replace(/\s+/g, ' ');
+  if (!t) return '';
+  if (t.includes('KHI') || t.includes('KARACHI')) return t.includes('LHR') ? 'KHI/LHR' : 'Karachi';
+  if (t.includes('LHR') || t.includes('LAHORE')) return 'Lahore';
+  if (t.includes('UK')) return 'UK';
+  if (t.includes('FAISL')) return 'Faisalabad';
+  if (t.includes('JHEL')) return 'Jhelum';
+  if (t.includes('RAW') || t.includes('PIND')) return 'Rawalpindi';
+  return t.charAt(0) + t.slice(1).toLowerCase();
+}
+
+/* ─── STATE (additional flags; main state declared near top) ─ */
+
+/* ─── LOADER ────────────────────────────────────────────── */
+async function loadCsv(url) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 12000);
+  try {
+    const res = await fetch(url, { signal: ctrl.signal, cache: 'no-store', mode: 'cors' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const parsed = Papa.parse(text, {
+      header: true, skipEmptyLines: true,
+      transformHeader: h => h.replace(/^﻿/, '').trim(),
+    });
+    return parsed.data || [];
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function setLoadMsg(msg) {
+  const el = document.getElementById('load-msg'); if (el) el.textContent = msg;
+}
+
+async function loadData(manual) {
+  const sync = document.getElementById('last-sync');
+  if (manual) sync.textContent = 'syncing…';
+  try {
+    const raw = await loadCsv(CONFIG.SHEET_CSV + '&t=' + Date.now());
+    ROWS = raw.map(r => {
+      const brand = s(col(r, 'Brand'));
+      if (!brand) return null;
+      const depts = {
+        Inventory: normStatus(col(r, 'Inventroy ', 'Inventroy', 'Inventory')),
+        POS: normStatus(col(r, 'POS')),
+        OMS: normStatus(col(r, 'OMS')),
+        Accounts: normStatus(col(r, 'Accounts')),
+        'Load Sheet': normStatus(col(r, 'Load Sheet')),
+        Manufacturing: normStatus(col(r, 'Manufacturing')),
+      };
+      const liveDepts = Object.values(depts).filter(d => d === 'Live').length;
+      const filledDepts = Object.values(depts).filter(d => d !== '').length;
+      const completion = filledDepts ? Math.round((liveDepts / 6) * 100) : 0;
+      const status = normStatus(col(r, 'Status'));
+      const goLiveRaw = s(col(r, 'Go live date ', 'Go live date'));
+      const goLive = parseGoLive(goLiveRaw);
+      const today = new Date(); today.setHours(0,0,0,0);
+      const isDelayed = goLive && goLive < today && status !== 'Live';
+      const pending = Object.entries(depts).filter(([_, v]) => v === 'Pending').map(([k]) => k);
+      const under = Object.entries(depts).filter(([_, v]) => v === 'Under Deployment').map(([k]) => k);
+      let risk = 'low';
+      if (isDelayed || (status === 'Pending' && pending.length >= 4)) risk = 'high';
+      else if (status === 'Under Deployment' || pending.length >= 2 || under.length >= 2) risk = 'med';
+      return {
+        brand, status, depts, completion, liveDepts,
+        deployStart: s(col(r, 'Deployment start')),
+        nextTask: s(col(r, 'Next Day Task')),
+        assignee: s(col(r, 'Asignee', 'Assignee')),
+        goLiveText: goLiveRaw,
+        goLive, isDelayed,
+        team: normTeam(col(r, 'Team')),
+        teamRaw: s(col(r, 'Team')),
+        pending, under, risk,
+      };
+    }).filter(Boolean);
+
+    if (!ROWS.length) throw new Error('Sheet returned 0 rows — check published-CSV URL');
+    document.getElementById('loader').style.display = 'none';
+    sync.textContent = 'Live · ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    render();
+  } catch (e) {
+    sync.textContent = 'Sync failed';
+    const isFile = location.protocol === 'file:';
+    const aborted = e.name === 'AbortError';
+    let hint = '';
+    if (isFile) hint = ' — Chrome blocks Google fetches from file://. Open via a local server: run `python -m http.server 8000` in this folder, then visit http://localhost:8000/';
+    else if (aborted) hint = ' — request timed out (12s). Check your internet or sheet URL.';
+    setLoadMsg('Load failed: ' + e.message + hint);
+    if (!isFile) setTimeout(() => loadData(false), 30000);
+  }
+}
+
+/* ─── RENDER ────────────────────────────────────────────── */
+function render() {
+  document.getElementById('kpi-count').textContent = `${ROWS.length} brands`;
+  renderKPIs();
+  renderStatusChart();
+  renderTeamChart();
+  renderTablePopulateFilters();
+  renderTable();
+  renderHeatmap();
+  renderLeaderboard();
+  renderAssigneeChart();
+  renderInsights();
+  renderRisk();
+  renderTimeline();
+}
+
+function refreshAllCharts() {
+  if (!ROWS.length) return;
+  if (window.Chart) Chart.defaults.color = getCss('--text-dim');
+  renderStatusChart(); renderTeamChart(); renderAssigneeChart();
+}
+
+/* ─── 1. KPI CARDS ──────────────────────────────────────── */
+function renderKPIs() {
+  const total = ROWS.length;
+  const live = ROWS.filter(r => r.status === 'Live').length;
+  const pending = ROWS.filter(r => r.status === 'Pending').length;
+  const under = ROWS.filter(r => r.status === 'Under Deployment').length;
+  const delayed = ROWS.filter(r => r.isDelayed).length;
+  const teams = new Set(ROWS.map(r => r.team).filter(Boolean)).size;
+  const assignees = new Set(ROWS.map(r => r.assignee).filter(Boolean)).size;
+  const completion = Math.round((live / Math.max(1, total)) * 100);
+  const critical = ROWS.filter(r => r.risk === 'high').length;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const wk = new Date(today); wk.setDate(wk.getDate() + 7);
+  const goWeek = ROWS.filter(r => r.goLive && r.goLive >= today && r.goLive <= wk).length;
+
+  const cards = [
+    { label: 'Total Brands',       v: total,      sub: `${teams} teams · ${assignees} assignees`, c: 'var(--accent)',   icon: 'layers' },
+    { label: 'Live Brands',        v: live,       sub: `<b>${completion}%</b> of total`,           c: 'var(--good)',     icon: 'check' },
+    { label: 'Pending',            v: pending,    sub: `${Math.round(pending/total*100)}% awaiting start`, c: 'var(--warn)', icon: 'clock', subClass: 'warn' },
+    { label: 'Under Deployment',   v: under,      sub: `${Math.round(under/total*100)}% in progress`,      c: 'var(--info)', icon: 'wrench' },
+    { label: 'Delayed',            v: delayed,    sub: delayed ? `<b>${delayed}</b> past go-live` : 'On schedule', c: 'var(--bad)', icon: 'alert', subClass: delayed ? 'bad' : '' },
+    { label: 'Total Teams',        v: teams,      sub: 'Active regional teams', c: 'var(--accent-2)', icon: 'users' },
+    { label: 'Active Assignees',   v: assignees,  sub: 'Engineers on deck',     c: 'var(--accent-2)', icon: 'user' },
+    { label: 'Completion',         v: completion + '%', sub: `${live} of ${total} live`, c: 'var(--good)', icon: 'gauge' },
+    { label: 'Critical Issues',    v: critical,   sub: critical ? `<b>${critical}</b> need attention` : 'Stable', c: 'var(--bad)', icon: 'alert', subClass: critical ? 'bad' : '' },
+    { label: 'Go-Live This Week',  v: goWeek,     sub: 'Within next 7 days',    c: 'var(--accent)', icon: 'rocket' },
+  ];
+  const grid = document.getElementById('kpi-grid');
+  grid.innerHTML = cards.map(c => `
+    <div class="kpi" style="--kpi-c:${c.c}">
+      <div class="kpi-row">
+        <div class="kpi-label">${c.label}</div>
+        <div class="kpi-icon">${ICONS[c.icon] || ''}</div>
+      </div>
+      <div class="kpi-value" data-target="${(''+c.v).replace('%','')}" data-suffix="${(''+c.v).includes('%') ? '%' : ''}">0${(''+c.v).includes('%') ? '%' : ''}</div>
+      <div class="kpi-sub ${c.subClass||''}">${c.sub}</div>
+    </div>`).join('');
+  // Animate counters
+  grid.querySelectorAll('.kpi-value').forEach(el => animateNumber(el));
+}
+
+function animateNumber(el) {
+  const target = parseFloat(el.dataset.target) || 0;
+  const suffix = el.dataset.suffix || '';
+  const start = performance.now();
+  const dur = 900;
+  function step(t) {
+    const p = Math.min(1, (t - start) / dur);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(target * eased).toLocaleString() + suffix;
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+const ICONS = {
+  layers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
+  check:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>',
+  clock:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  wrench: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+  alert:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  users:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  user:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  gauge:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6"/><path d="M22 6l-3-3"/></svg>',
+  rocket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/></svg>',
+  trend:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>',
+};
+
+/* ─── 2. STATUS DONUT ───────────────────────────────────── */
+function renderStatusChart() {
+  const counts = {};
+  ROWS.forEach(r => { counts[r.status || 'Other'] = (counts[r.status || 'Other'] || 0) + 1; });
+  const labels = Object.keys(counts);
+  const data = labels.map(l => counts[l]);
+  const colorMap = {
+    'Live': getCss('--good'),
+    'Pending': getCss('--warn'),
+    'Under Deployment': getCss('--info'),
+    'Demo': getCss('--accent-2'),
+    'Client Pending': getCss('--text-dim'),
+    'Other': getCss('--text-mute'),
+  };
+  const colors = labels.map(l => colorMap[l] || getCss('--text-mute'));
+
+  if (charts.status) charts.status.destroy();
+  const ctx = document.getElementById('chart-status');
+  charts.status = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0, spacing: 2, borderRadius: 6 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '68%',
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor: getCss('--bg-2'), borderColor: getCss('--border-2'), borderWidth: 1, padding: 10, titleColor: getCss('--text'), bodyColor: getCss('--text-dim') }
+      },
+      animation: { animateRotate: true, duration: 900 },
+    }
+  });
+  // Custom legend
+  const total = data.reduce((a,b)=>a+b, 0);
+  document.getElementById('legend-status').innerHTML = labels.map((l, i) =>
+    `<span class="legend-item"><span class="swatch" style="background:${colors[i]}"></span>${l} <b>${data[i]}</b> · ${Math.round(data[i]/total*100)}%</span>`
+  ).join('');
+}
+
+/* ─── 2. TEAM STACKED BAR ───────────────────────────────── */
+function renderTeamChart() {
+  const teamMap = {};
+  ROWS.forEach(r => {
+    const t = r.team || 'Unassigned';
+    if (!teamMap[t]) teamMap[t] = { Live:0, Pending:0, 'Under Deployment':0, Other:0 };
+    const k = ['Live','Pending','Under Deployment'].includes(r.status) ? r.status : 'Other';
+    teamMap[t][k]++;
+  });
+  const teams = Object.keys(teamMap).sort((a,b) => Object.values(teamMap[b]).reduce((x,y)=>x+y,0) - Object.values(teamMap[a]).reduce((x,y)=>x+y,0));
+  const ds = ['Live','Under Deployment','Pending','Other'];
+  const colorMap = { Live: getCss('--good'), 'Under Deployment': getCss('--info'), Pending: getCss('--warn'), Other: getCss('--text-mute') };
+
+  if (charts.team) charts.team.destroy();
+  charts.team = new Chart(document.getElementById('chart-team'), {
+    type: 'bar',
+    data: {
+      labels: teams,
+      datasets: ds.map(name => ({
+        label: name, data: teams.map(t => teamMap[t][name]),
+        backgroundColor: colorMap[name], borderRadius: 4, borderSkipped: false
+      }))
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { stacked: true, grid: { color: getCss('--grid'), display: false }, ticks: { color: getCss('--text-dim') } },
+        y: { stacked: true, grid: { color: getCss('--grid') }, ticks: { color: getCss('--text-dim'), precision: 0 } }
+      },
+      plugins: {
+        legend: { position: 'bottom', labels: { color: getCss('--text-dim'), boxWidth: 10, boxHeight: 10, font: { size: 11 } } },
+        tooltip: { backgroundColor: getCss('--bg-2'), borderColor: getCss('--border-2'), borderWidth: 1 }
+      }
+    }
+  });
+}
+
+/* ─── 3. TABLE ──────────────────────────────────────────── */
+const TBL_COLS = [
+  { k: 'brand',      l: 'Brand',       w: 'brand-cell' },
+  { k: 'status',     l: 'Status',      r: r => `<span class="badge ${statusBadgeClass(r.status)}">${r.status || '—'}</span>` },
+  { k: 'completion', l: 'Completion',  num: true, r: r => `<div class="progress"><div class="bar"><div class="bar-fill ${r.completion>=80?'good':r.completion>=40?'':'warn'}" style="width:${r.completion}%"></div></div><span>${r.completion}%</span></div>` },
+  { k: 'risk',       l: 'Risk',        r: r => `<span class="badge ${r.risk==='high'?'delayed':r.risk==='med'?'pending':'live'}">${r.risk.toUpperCase()}</span>` },
+  { k: 'assignee',   l: 'Assignee',    r: r => r.assignee || '—' },
+  { k: 'team',       l: 'Team',        r: r => r.team || '—' },
+  { k: 'goLive',     l: 'Go-Live',     r: r => r.goLive ? `${fmtDate(r.goLive)} <small style="color:var(--text-mute)">${fmtRel(r.goLive)}</small>` : (r.goLiveText || '—') },
+  { k: 'nextTask',   l: 'Next Task',   r: r => r.nextTask ? `<span title="${esc(r.nextTask)}">${esc(r.nextTask.length > 40 ? r.nextTask.slice(0,40)+'…' : r.nextTask)}</span>` : '—' },
+];
+function esc(t){ return s(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function renderTablePopulateFilters() {
+  const fill = (id, vals) => {
+    const sel = document.getElementById(id);
+    const cur = sel.value;
+    const opts = ['<option value="">' + sel.options[0].text + '</option>'].concat(
+      [...new Set(vals.filter(Boolean))].sort().map(v => `<option>${esc(v)}</option>`)
+    );
+    sel.innerHTML = opts.join('');
+    sel.value = cur;
+  };
+  fill('tbl-status', ROWS.map(r => r.status));
+  fill('tbl-team', ROWS.map(r => r.team));
+  fill('tbl-assignee', ROWS.map(r => r.assignee));
+}
+
+function renderTable() {
+  let f = ROWS.slice();
+  const q = tblState.search.toLowerCase();
+  if (q) f = f.filter(r =>
+    [r.brand, r.assignee, r.team, r.status, r.nextTask, r.goLiveText].join(' ').toLowerCase().includes(q));
+  if (tblState.status)   f = f.filter(r => r.status === tblState.status);
+  if (tblState.team)     f = f.filter(r => r.team === tblState.team);
+  if (tblState.assignee) f = f.filter(r => r.assignee === tblState.assignee);
+  if (tblState.risk)     f = f.filter(r => r.risk === tblState.risk);
+  f.sort((a, b) => {
+    const k = tblState.sortKey;
+    let av = a[k], bv = b[k];
+    if (k === 'goLive') { av = av ? av.getTime() : Infinity; bv = bv ? bv.getTime() : Infinity; }
+    if (typeof av === 'string') av = av.toLowerCase();
+    if (typeof bv === 'string') bv = bv.toLowerCase();
+    return av < bv ? -tblState.sortDir : av > bv ? tblState.sortDir : 0;
+  });
+
+  document.getElementById('tbl-count').textContent = `${f.length} of ${ROWS.length} brands`;
+  // header
+  const head = document.getElementById('tbl-head');
+  head.innerHTML = TBL_COLS.map(c =>
+    `<th data-k="${c.k}" class="${tblState.sortKey===c.k?'active':''} ${c.num?'num':''}">${c.l}<span class="sort-ind">${tblState.sortKey===c.k ? (tblState.sortDir===1?'▲':'▼') : '↕'}</span></th>`
+  ).join('');
+  head.querySelectorAll('th').forEach(th => th.onclick = () => {
+    const k = th.dataset.k;
+    if (tblState.sortKey === k) tblState.sortDir *= -1;
+    else { tblState.sortKey = k; tblState.sortDir = 1; }
+    tblState.page = 1;
+    renderTable();
+  });
+  // body
+  const ps = CONFIG.PAGE_SIZE;
+  const totalPages = Math.max(1, Math.ceil(f.length / ps));
+  if (tblState.page > totalPages) tblState.page = totalPages;
+  const slice = f.slice((tblState.page - 1) * ps, tblState.page * ps);
+  const tb = document.getElementById('tbl-body');
+  if (!slice.length) {
+    tb.innerHTML = `<tr><td colspan="${TBL_COLS.length}" style="text-align:center;padding:40px;color:var(--text-mute)">No matches</td></tr>`;
+  } else {
+    tb.innerHTML = slice.map(r => '<tr>' + TBL_COLS.map(c => {
+      const val = c.r ? c.r(r) : esc(r[c.k] || '—');
+      return `<td class="${c.w||''} ${c.num?'num':''}">${val}</td>`;
+    }).join('') + '</tr>').join('');
+  }
+  document.getElementById('tbl-info').textContent = `Page ${tblState.page} of ${totalPages}`;
+  document.getElementById('tbl-prev').disabled = tblState.page <= 1;
+  document.getElementById('tbl-next').disabled = tblState.page >= totalPages;
+}
+['tbl-search','tbl-status','tbl-team','tbl-assignee','tbl-risk'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    const k = id.replace('tbl-','');
+    tblState[k === 'search' ? 'search' : k] = document.getElementById(id).value;
+    tblState.page = 1;
+    renderTable();
+  });
+});
+document.getElementById('tbl-prev').onclick = () => { tblState.page--; renderTable(); };
+document.getElementById('tbl-next').onclick = () => { tblState.page++; renderTable(); };
+
+/* ─── 4. DEPARTMENT HEATMAP ─────────────────────────────── */
+function renderHeatmap() {
+  const DEPTS = ['Inventory','POS','OMS','Accounts','Load Sheet','Manufacturing'];
+  const teamMap = {};
+  ROWS.forEach(r => {
+    const t = r.team || 'Unassigned';
+    if (!teamMap[t]) teamMap[t] = { _total: 0 };
+    teamMap[t]._total++;
+    DEPTS.forEach(d => {
+      teamMap[t][d] = teamMap[t][d] || { live: 0, total: 0 };
+      if (r.depts[d]) teamMap[t][d].total++;
+      if (r.depts[d] === 'Live') teamMap[t][d].live++;
+    });
+  });
+  const teams = Object.keys(teamMap).sort((a,b) => teamMap[b]._total - teamMap[a]._total);
+  const heat = document.getElementById('heatmap');
+  let html = `<div class="hm-row hd"><div></div>${DEPTS.map(d=>`<div style="text-align:center">${d}</div>`).join('')}</div>`;
+  html += teams.map(t => {
+    return `<div class="hm-row"><div class="hm-label">${t} <small style="color:var(--text-mute)">· ${teamMap[t]._total}</small></div>` +
+      DEPTS.map(d => {
+        const c = teamMap[t][d];
+        if (!c.total) return `<div class="hm-cell hm-l-0">—</div>`;
+        const pct = Math.round((c.live / c.total) * 100);
+        const lvl = pct >= 90 ? 100 : pct >= 70 ? 80 : pct >= 50 ? 60 : pct >= 25 ? 40 : pct > 0 ? 20 : 0;
+        return `<div class="hm-cell hm-l-${lvl}" title="${c.live} of ${c.total} live">${pct}%</div>`;
+      }).join('') + `</div>`;
+  }).join('');
+  heat.innerHTML = html;
+}
+
+/* ─── 5. ASSIGNEE LEADERBOARD + CHART ───────────────────── */
+function renderLeaderboard() {
+  const map = {};
+  ROWS.forEach(r => {
+    const a = r.assignee; if (!a) return;
+    if (!map[a]) map[a] = { live: 0, pending: 0, under: 0, total: 0, delayed: 0 };
+    map[a].total++;
+    if (r.status === 'Live') map[a].live++;
+    if (r.status === 'Pending') map[a].pending++;
+    if (r.status === 'Under Deployment') map[a].under++;
+    if (r.isDelayed) map[a].delayed++;
+  });
+  const ranked = Object.entries(map).map(([a, m]) => ({ a, ...m, score: m.live * 2 + m.under - m.delayed * 2 }))
+    .sort((x, y) => y.score - x.score).slice(0, 8);
+  document.getElementById('leader').innerHTML = ranked.map((r, i) => `
+    <div class="leader-row">
+      <div class="leader-rank ${i===0?'gold':i===1?'silver':i===2?'bronze':''}">${i + 1}</div>
+      <div>
+        <div class="leader-name">${esc(r.a)}</div>
+        <div class="leader-meta">${r.live} live · ${r.under} active · ${r.pending} pending${r.delayed?` · <span style="color:var(--bad)">${r.delayed} delayed</span>`:''}</div>
+      </div>
+      <div class="progress" style="min-width:80px"><div class="bar"><div class="bar-fill good" style="width:${Math.round(r.live/r.total*100)}%"></div></div></div>
+      <div class="leader-score">${r.total}</div>
+    </div>
+  `).join('') || '<p style="color:var(--text-mute);font-size:12px">No assignees recorded</p>';
+}
+
+function renderAssigneeChart() {
+  const map = {};
+  ROWS.forEach(r => {
+    const a = r.assignee; if (!a) return;
+    if (!map[a]) map[a] = { Live: 0, 'Under Deployment': 0, Pending: 0 };
+    if (['Live','Under Deployment','Pending'].includes(r.status)) map[a][r.status]++;
+  });
+  const sorted = Object.entries(map).sort((x,y) =>
+    Object.values(y[1]).reduce((a,b)=>a+b,0) - Object.values(x[1]).reduce((a,b)=>a+b,0)
+  ).slice(0, 10);
+  const labels = sorted.map(x => x[0]);
+  const colorMap = { Live: getCss('--good'), 'Under Deployment': getCss('--info'), Pending: getCss('--warn') };
+  if (charts.assignee) charts.assignee.destroy();
+  charts.assignee = new Chart(document.getElementById('chart-assignee'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: ['Live','Under Deployment','Pending'].map(k => ({
+        label: k, data: sorted.map(x => x[1][k]),
+        backgroundColor: colorMap[k], borderRadius: 4, borderSkipped: false
+      }))
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { stacked: true, grid: { color: getCss('--grid') }, ticks: { color: getCss('--text-dim'), precision: 0 } },
+        y: { stacked: true, grid: { display: false }, ticks: { color: getCss('--text-dim') } }
+      },
+      plugins: {
+        legend: { position: 'bottom', labels: { color: getCss('--text-dim'), boxWidth: 10, boxHeight: 10, font: { size: 11 } } },
+        tooltip: { backgroundColor: getCss('--bg-2'), borderColor: getCss('--border-2'), borderWidth: 1 }
+      }
+    }
+  });
+}
+
+/* ─── 6. CEO INSIGHTS ───────────────────────────────────── */
+function renderInsights() {
+  const total = ROWS.length;
+  const live = ROWS.filter(r => r.status === 'Live').length;
+  const compl = Math.round(live / Math.max(1, total) * 100);
+  const delayed = ROWS.filter(r => r.isDelayed).length;
+  const aWorkload = {};
+  ROWS.forEach(r => { if (r.assignee && r.status !== 'Live') aWorkload[r.assignee] = (aWorkload[r.assignee] || 0) + 1; });
+  const top = Object.entries(aWorkload).sort((a,b) => b[1]-a[1])[0];
+  const today = new Date(); today.setHours(0,0,0,0);
+  const wk = new Date(today); wk.setDate(wk.getDate() + 7);
+  const goWeek = ROWS.filter(r => r.goLive && r.goLive >= today && r.goLive <= wk);
+  const critical = ROWS.filter(r => r.risk === 'high');
+  const teamsActive = new Set(ROWS.filter(r => r.status !== 'Live').map(r => r.team).filter(Boolean));
+
+  const items = [
+    { c: 'var(--good)',  i: 'check', t: 'Deployment progress', p: `<b>${compl}%</b> of all brands are live (${live} of ${total}). Pace is steady.` },
+    delayed ? { c: 'var(--bad)', i: 'alert', t: 'Delayed launches', p: `<b>${delayed}</b> brand${delayed!==1?'s are':' is'} past their go-live date — needs attention.` } : null,
+    top ? { c: 'var(--accent-2)', i: 'user', t: 'Highest workload', p: `<b>${esc(top[0])}</b> is handling <b>${top[1]}</b> active deployment${top[1]!==1?'s':''} — the largest load.` } : null,
+    goWeek.length ? { c: 'var(--accent)', i: 'rocket', t: 'Launches this week', p: `<b>${goWeek.length}</b> brand${goWeek.length!==1?'s go':' goes'} live in the next 7 days: ${goWeek.slice(0,3).map(r=>esc(r.brand)).join(', ')}${goWeek.length>3?'…':''}` } : null,
+    critical.length ? { c: 'var(--bad)', i: 'alert', t: 'Critical issues', p: `<b>${critical.length}</b> brand${critical.length!==1?'s require':' requires'} immediate attention based on risk score.` } : null,
+    { c: 'var(--info)', i: 'users', t: 'Active teams', p: `<b>${teamsActive.size}</b> regional team${teamsActive.size!==1?'s have':' has'} ongoing work — load is distributed.` },
+  ].filter(Boolean);
+  document.getElementById('insights').innerHTML = items.map(it => `
+    <div class="insight" style="--ins-c:${it.c}">
+      <div class="insight-ico">${ICONS[it.i] || ''}</div>
+      <div class="insight-body"><h4>${it.t}</h4><p>${it.p}</p></div>
+    </div>`).join('');
+}
+
+/* ─── 7. RISK MONITOR ───────────────────────────────────── */
+function renderRisk() {
+  const risks = ROWS.map(r => {
+    const reasons = [];
+    if (r.isDelayed) reasons.push('Past go-live date');
+    if (r.status === 'Pending' && r.pending.length >= 4) reasons.push('Most departments pending');
+    if (r.under.length >= 3) reasons.push(`${r.under.length} departments mid-deployment`);
+    if (!r.assignee && r.status !== 'Live') reasons.push('No assignee');
+    if (s(r.nextTask).toLowerCase().includes('client') && lc(r.nextTask).includes('pending')) reasons.push('Blocked client-side');
+    return reasons.length ? { ...r, reasons } : null;
+  }).filter(Boolean).sort((a, b) => {
+    const o = { high: 0, med: 1, low: 2 };
+    return (o[a.risk] - o[b.risk]) || (b.reasons.length - a.reasons.length);
+  }).slice(0, 25);
+  const ac = { high: 'var(--bad)', med: 'var(--warn)', low: 'var(--info)' };
+  const al = document.getElementById('alerts');
+  al.innerHTML = risks.length ? risks.map(r => `
+    <div class="alert" style="--alert-c:${ac[r.risk]}">
+      <div class="alert-ico">${ICONS.alert}</div>
+      <div class="alert-body">
+        <h5>${esc(r.brand)}</h5>
+        <p>${r.reasons.map(esc).join(' · ')}${r.assignee ? ' · ' + esc(r.assignee) : ''}</p>
+      </div>
+      <span class="alert-tag">${r.risk}</span>
+    </div>`).join('') : '<p style="color:var(--text-mute);font-size:12px">No risks detected — all clear.</p>';
+}
+
+/* ─── 8. TIMELINE ───────────────────────────────────────── */
+function renderTimeline() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const items = ROWS.filter(r => r.goLive instanceof Date && !isNaN(r.goLive))
+    .sort((a, b) => Math.abs(a.goLive - today) - Math.abs(b.goLive - today))
+    .slice(0, 30)
+    .sort((a, b) => a.goLive - b.goLive);
+  const tl = document.getElementById('timeline');
+  tl.innerHTML = items.length ? items.map(r => {
+    const past = r.goLive < today;
+    const d = r.goLive;
+    return `<div class="tl-row ${past?'past':''}">
+      <div class="tl-date">
+        <small>${d.toLocaleDateString('en-GB',{month:'short'})}</small>
+        <b>${String(d.getDate()).padStart(2,'0')}</b>
+        <small>${d.getFullYear()}</small>
+      </div>
+      <div>
+        <div class="tl-name">${esc(r.brand)}</div>
+        <div class="tl-meta">${esc(r.team || '—')} · ${esc(r.assignee || 'Unassigned')} · ${fmtRel(d)}</div>
+      </div>
+      <span class="badge ${statusBadgeClass(r.status)}">${r.status || '—'}</span>
+    </div>`;
+  }).join('') : '<p style="color:var(--text-mute);font-size:12px">No go-live dates recorded</p>';
+}
+
+/* ─── EXPORTS ───────────────────────────────────────────── */
+document.getElementById('btn-export-csv').addEventListener('click', () => {
+  const headers = ['Brand','Status','Completion %','Risk','Assignee','Team','Go Live','Next Task','Inventory','POS','OMS','Accounts','Load Sheet','Manufacturing'];
+  const rows = ROWS.map(r => [
+    r.brand, r.status, r.completion, r.risk, r.assignee, r.team,
+    r.goLive ? fmtDate(r.goLive) : r.goLiveText,
+    r.nextTask,
+    r.depts.Inventory, r.depts.POS, r.depts.OMS, r.depts.Accounts, r.depts['Load Sheet'], r.depts.Manufacturing,
+  ]);
+  const csv = [headers, ...rows].map(row => row.map(c => `"${(c==null?'':String(c)).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `tu-active-deployment-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+});
+
+document.getElementById('btn-export-png').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-export-png');
+  btn.disabled = true;
+  try {
+    const canvas = await html2canvas(document.getElementById('app'), {
+      backgroundColor: getCss('--bg'),
+      scale: 1.5, useCORS: true, logging: false,
+    });
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `tu-active-deployment-${new Date().toISOString().slice(0,10)}.png`;
+      a.click(); URL.revokeObjectURL(url);
+    });
+  } catch (e) { alert('Export failed: ' + e.message); }
+  btn.disabled = false;
+});
+
+/* ─── BOOTSTRAP ─────────────────────────────────────────── */
+function bootstrap() {
+  if (kickedBoot) return;
+  kickedBoot = true;
+  loadData(false);
+  setInterval(() => loadData(false), CONFIG.AUTO_REFRESH_MS);
+}
+</script>
+</body>
+</html>
