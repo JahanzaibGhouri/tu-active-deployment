@@ -11,7 +11,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 /* ═══════════════════════════════════════════════════════════
    TU-ACTIVE DEPLOYMENT — Stylesheet
@@ -660,10 +659,6 @@ tbody td.brand-cell { font-weight: 600; color: var(--text); }
   .form-grid { grid-template-columns: 1fr; }
 }
 
-/* ─── Roles: hide write controls for viewers ────────────── */
-body.viewer-mode .row-actions { display: none; }
-body.viewer-mode .btn-add { display: none !important; }
-
 /* ─── Responsive ─────────────────────────────────────────── */
 @media (max-width: 768px) {
   .app { padding: 14px 14px 40px; }
@@ -696,23 +691,6 @@ body.viewer-mode .btn-add { display: none !important; }
     <div class="gate-error" id="gate-err"></div>
     <div class="gate-foot">Authorized personnel only · Secure session</div>
   </form>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════ -->
-<!--  GOOGLE IDENTITY GATE (second layer, after password)    -->
-<!-- ═══════════════════════════════════════════════════════ -->
-<div id="google-gate" class="gate" style="display:none">
-  <div class="gate-card">
-    <div class="gate-logo">
-      <span class="dot"></span>
-      <span class="gate-title">TU-ACTIVE DEPLOYMENT</span>
-    </div>
-    <h1>Verify your account</h1>
-    <p>Sign in with your authorized Google account to continue</p>
-    <div id="google-signin-btn" style="display:flex;justify-content:center;margin-top:4px"></div>
-    <div class="gate-error" id="google-gate-err"></div>
-    <div class="gate-foot">Access is limited to approved email addresses</div>
-  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -814,7 +792,6 @@ body.viewer-mode .btn-add { display: none !important; }
       <span>TU-ACTIVE DEPLOYMENT</span>
     </div>
     <div class="status-pill"><span class="live-dot"></span><span id="last-sync">syncing…</span></div>
-    <div class="status-pill" id="whoami-badge" style="display:none"></div>
     <div class="spacer"></div>
     <button class="icon-btn" id="btn-refresh" title="Refresh now">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>
@@ -982,8 +959,7 @@ const CONFIG = {
   AUTO_REFRESH_MS: 60 * 1000,        // 60-second sync
   PASSWORD: 'tuactive2026',          // change this
   PAGE_SIZE: 15,
-  SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbzgQxM6nDMairzoqXZffbyvUBBJWhbJqKxzehCIVjMOV_Si-C9nxcnysm07aNQLU5ft/exec', // ends in /exec — see CRUD setup guide
-  GOOGLE_CLIENT_ID: '99055577129-kfm0n3bm2h1b1nfgk4kbj3el0k9jfof2.apps.googleusercontent.com',  // ends in .apps.googleusercontent.com — see ROLES setup guide
+  SCRIPT_URL: 'PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE', // ends in /exec — see CRUD setup guide
 };
 
 /* ─── EARLY STATE (referenced during init / auth bootstrap) ─ */
@@ -998,12 +974,6 @@ const gate = document.getElementById('gate');
 const gateForm = document.getElementById('gate-form');
 const gateErr = document.getElementById('gate-err');
 const gatePw = document.getElementById('gate-pw');
-const googleGate = document.getElementById('google-gate');
-const googleGateErr = document.getElementById('google-gate-err');
-
-let GOOGLE_ID_TOKEN = null;
-let USER_ROLE = null;
-let USER_EMAIL = null;
 
 function isAuthed() {
   try {
@@ -1014,8 +984,9 @@ function isAuthed() {
 function authIn() {
   sessionStorage.setItem(SESS_KEY, JSON.stringify({ ok: true, t: Date.now() }));
   gate.style.display = 'none';
-  googleGate.style.display = 'flex';
-  initGoogleSignIn();
+  document.getElementById('app').classList.add('ready');
+  document.getElementById('loader').style.display = 'flex';
+  bootstrap();
 }
 function authOut() {
   sessionStorage.removeItem(SESS_KEY);
@@ -1027,54 +998,6 @@ gateForm.addEventListener('submit', (e) => {
   else { gateErr.textContent = 'Incorrect password'; gatePw.value = ''; gatePw.focus(); }
 });
 if (isAuthed()) authIn();
-
-/* ─── AUTH GATE: Google identity layer (viewer/editor roles) ─ */
-function initGoogleSignIn() {
-  if (!CONFIG.GOOGLE_CLIENT_ID || CONFIG.GOOGLE_CLIENT_ID.includes('PASTE_YOUR')) {
-    googleGateErr.textContent = "Google sign-in isn't configured yet — set CONFIG.GOOGLE_CLIENT_ID.";
-    return;
-  }
-  google.accounts.id.initialize({
-    client_id: CONFIG.GOOGLE_CLIENT_ID,
-    callback: handleGoogleCredential,
-  });
-  google.accounts.id.renderButton(
-    document.getElementById('google-signin-btn'),
-    { theme: 'filled_black', size: 'large', shape: 'pill', text: 'signin_with' }
-  );
-}
-async function handleGoogleCredential(response) {
-  googleGateErr.textContent = '';
-  try {
-    const result = await apiCall('whoami', { idToken: response.credential });
-    if (result.role === 'editor' || result.role === 'viewer') {
-      GOOGLE_ID_TOKEN = response.credential;
-      USER_ROLE = result.role;
-      USER_EMAIL = result.email;
-      enterApp();
-    } else {
-      googleGateErr.textContent = "Your Google account isn't authorized for this dashboard. Contact your admin to be added.";
-    }
-  } catch (err) {
-    googleGateErr.textContent = 'Could not verify your account: ' + err.message;
-  }
-}
-function enterApp() {
-  googleGate.style.display = 'none';
-  document.getElementById('app').classList.add('ready');
-  document.getElementById('loader').style.display = 'flex';
-  applyRoleUI();
-  bootstrap();
-}
-function applyRoleUI() {
-  const isEditor = USER_ROLE === 'editor';
-  document.body.classList.toggle('viewer-mode', !isEditor);
-  const badge = document.getElementById('whoami-badge');
-  if (badge && USER_EMAIL) {
-    badge.style.display = '';
-    badge.textContent = USER_EMAIL + ' · ' + (isEditor ? 'Editor' : 'Viewer');
-  }
-}
 
 /* ─── THEME ─────────────────────────────────────────────── */
 const THEME_KEY = 'tu_theme';
@@ -1742,13 +1665,11 @@ async function apiCall(action, payload) {
   if (!CONFIG.SCRIPT_URL || CONFIG.SCRIPT_URL.includes('PASTE_YOUR')) {
     throw new Error('Apps Script URL not set — paste it into CONFIG.SCRIPT_URL.');
   }
-  const body = { action, ...payload };
-  if (GOOGLE_ID_TOKEN && !body.idToken) body.idToken = GOOGLE_ID_TOKEN;
   const res = await fetch(CONFIG.SCRIPT_URL, {
     method: 'POST',
     // text/plain avoids a CORS preflight on Apps Script web apps; the body is still valid JSON
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ action, ...payload }),
   });
   if (!res.ok) throw new Error('HTTP ' + res.status);
   const json = await res.json();
