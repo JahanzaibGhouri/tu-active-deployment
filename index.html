@@ -711,7 +711,7 @@ tbody td.brand-cell { font-weight: 600; color: var(--text); }
     <input type="hidden" id="f-original-brand" />
     <div class="form-grid">
       <div class="form-field full">
-        <label for="f-brand">Brand *</label>
+        <label for="f-brand">Brand * <span id="f-brand-hint" style="display:none;font-weight:400;text-transform:none;color:var(--text-mute);font-size:10px;letter-spacing:0">(locked in edit mode — change it in the sheet directly)</span></label>
         <input id="f-brand" required placeholder="e.g. Minnie Minors — Gulberg" />
       </div>
       <div class="form-field">
@@ -727,11 +727,13 @@ tbody td.brand-cell { font-weight: 600; color: var(--text); }
       </div>
       <div class="form-field">
         <label for="f-team">Team</label>
-        <input id="f-team" placeholder="e.g. Lahore" />
+        <select id="f-team" onchange="handleSelectOther(this,'f-team-other')"></select>
+        <input id="f-team-other" placeholder="Type new team name" style="display:none;margin-top:6px" />
       </div>
       <div class="form-field">
         <label for="f-assignee">Assignee</label>
-        <input id="f-assignee" placeholder="e.g. Ahmed Raza" />
+        <select id="f-assignee" onchange="handleSelectOther(this,'f-assignee-other')"></select>
+        <input id="f-assignee-other" placeholder="Type new assignee name" style="display:none;margin-top:6px" />
       </div>
       <div class="form-field">
         <label for="f-deploystart">Deployment Start</label>
@@ -1687,34 +1689,81 @@ function toast(msg, type) {
 }
 
 /* ─── CRUD: form <-> row mapping ─────────────────────────── */
+function getSelectOrOther(selId, otherId) {
+  const sel = document.getElementById(selId);
+  return sel.value === '__other__'
+    ? s(document.getElementById(otherId).value)
+    : s(sel.value);
+}
+
 function collectFormData() {
   return {
-    'Brand': s(document.getElementById('f-brand').value),
-    'Status': s(document.getElementById('f-status').value),
-    'Team': s(document.getElementById('f-team').value),
-    'Assignee': s(document.getElementById('f-assignee').value),
+    'Brand':            s(document.getElementById('f-brand').value),
+    'Status':           s(document.getElementById('f-status').value),
+    'Team':             getSelectOrOther('f-team', 'f-team-other'),
+    'Assignee':         getSelectOrOther('f-assignee', 'f-assignee-other'),
     'Deployment start': s(document.getElementById('f-deploystart').value),
-    'Go live date': s(document.getElementById('f-golive').value),
-    'Next Day Task': s(document.getElementById('f-nexttask').value),
-    'Inventory': s(document.getElementById('f-inventory').value),
-    'POS': s(document.getElementById('f-pos').value),
-    'OMS': s(document.getElementById('f-oms').value),
-    'Accounts': s(document.getElementById('f-accounts').value),
-    'Load Sheet': s(document.getElementById('f-loadsheet').value),
-    'Manufacturing': s(document.getElementById('f-manufacturing').value),
+    'Go live date':     s(document.getElementById('f-golive').value),
+    'Next Day Task':    s(document.getElementById('f-nexttask').value),
+    'Inventory':        s(document.getElementById('f-inventory').value),
+    'POS':              s(document.getElementById('f-pos').value),
+    'OMS':              s(document.getElementById('f-oms').value),
+    'Accounts':         s(document.getElementById('f-accounts').value),
+    'Load Sheet':       s(document.getElementById('f-loadsheet').value),
+    'Manufacturing':    s(document.getElementById('f-manufacturing').value),
   };
 }
 
+function handleSelectOther(sel, otherId) {
+  const other = document.getElementById(otherId);
+  const show = sel.value === '__other__';
+  other.style.display = show ? 'block' : 'none';
+  if (show) other.focus();
+  else other.value = '';
+}
+
+function fillDynamicSelect(id, values, currentValue) {
+  const sel = document.getElementById(id);
+  sel.innerHTML = '<option value="">—</option>';
+  values.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v; opt.textContent = v;
+    if (v === currentValue) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  const otherOpt = document.createElement('option');
+  otherOpt.value = '__other__'; otherOpt.textContent = '+ Add new...';
+  sel.appendChild(otherOpt);
+}
+
 function openModal(mode, row) {
+  const isEdit = mode === 'edit';
   document.getElementById('modal-err').textContent = '';
   document.getElementById('brand-form').reset();
-  document.getElementById('modal-title').textContent = mode === 'edit' ? 'Edit Brand' : 'Add Brand';
-  document.getElementById('f-original-brand').value = mode === 'edit' && row ? row.brand : '';
-  if (mode === 'edit' && row) {
-    document.getElementById('f-brand').value = row.brand || '';
+  document.getElementById('modal-title').textContent = isEdit ? 'Edit Brand' : 'Add Brand';
+  document.getElementById('f-original-brand').value = isEdit && row ? row.brand : '';
+
+  // Brand field — locked in edit mode (it's the lookup key, can't change it here)
+  const brandInput = document.getElementById('f-brand');
+  const brandHint = document.getElementById('f-brand-hint');
+  brandInput.readOnly = isEdit;
+  brandInput.style.opacity = isEdit ? '0.55' : '1';
+  brandInput.style.cursor = isEdit ? 'not-allowed' : '';
+  brandHint.style.display = isEdit ? 'inline' : 'none';
+
+  // Populate Team and Assignee dropdowns from live ROWS data
+  const teams = [...new Set((ROWS || []).map(r => r.teamRaw || r.team).filter(Boolean))].sort();
+  const assignees = [...new Set((ROWS || []).map(r => r.assignee).filter(Boolean))].sort();
+  fillDynamicSelect('f-team', teams, isEdit && row ? (row.teamRaw || row.team || '') : '');
+  fillDynamicSelect('f-assignee', assignees, isEdit && row ? (row.assignee || '') : '');
+
+  // Hide "other" text inputs on open
+  document.getElementById('f-team-other').style.display = 'none';
+  document.getElementById('f-assignee-other').style.display = 'none';
+
+  if (isEdit && row) {
+    brandInput.value = row.brand || '';
     document.getElementById('f-status').value = row.status || '';
-    document.getElementById('f-team').value = row.teamRaw || row.team || '';
-    document.getElementById('f-assignee').value = row.assignee || '';
     document.getElementById('f-deploystart').value = row.deployStart || '';
     document.getElementById('f-golive').value = row.goLiveText || '';
     document.getElementById('f-nexttask').value = row.nextTask || '';
@@ -1725,8 +1774,9 @@ function openModal(mode, row) {
     document.getElementById('f-loadsheet').value = row.depts['Load Sheet'] || '';
     document.getElementById('f-manufacturing').value = row.depts.Manufacturing || '';
   }
+
   document.getElementById('brand-modal').classList.add('open');
-  document.getElementById('f-brand').focus();
+  if (!isEdit) brandInput.focus();
 }
 function closeModal() { document.getElementById('brand-modal').classList.remove('open'); }
 
