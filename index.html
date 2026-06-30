@@ -962,6 +962,7 @@ const CONFIG = {
   PASSWORD: 'tuactive2026',          // change this
   PAGE_SIZE: 15,
   SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbzgQxM6nDMairzoqXZffbyvUBBJWhbJqKxzehCIVjMOV_Si-C9nxcnysm07aNQLU5ft/exec', // ends in /exec — see CRUD setup guide
+  API_TOKEN: 'tuactive_k7m2p9x4q8r3w6n1z5c0t8b4h7d2f9j3', // MUST match API_TOKEN in code.gs exactly
 };
 
 /* ─── EARLY STATE (referenced during init / auth bootstrap) ─ */
@@ -1671,7 +1672,7 @@ async function apiCall(action, payload) {
     method: 'POST',
     // text/plain avoids a CORS preflight on Apps Script web apps; the body is still valid JSON
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action, ...payload }),
+    body: JSON.stringify({ action, token: CONFIG.API_TOKEN, ...payload }),
   });
   if (!res.ok) throw new Error('HTTP ' + res.status);
   const json = await res.json();
